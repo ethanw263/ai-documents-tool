@@ -1,4 +1,4 @@
-// HomePage.jsx — Footer now full width, sidebar unchanged
+// HomePage.jsx — Final fix: normalize clause titles with number/punctuation removal
 import React, { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import "./HomePage.css";
@@ -20,6 +20,9 @@ export default function HomePage() {
   const clauseSectionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const normalize = (str) =>
+    str?.trim().toLowerCase().replace(/^[\d\.\s-]+/, "").replace(/\.+$/, "");
+
   const handleScanForHeadings = async () => {
     setLoading(true);
     setError(null);
@@ -34,7 +37,7 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (data.error) setError(data.error);
-      else setClauseTitles(data.titles || []);
+      else setClauseTitles(data.titles?.map((t) => t.trim()) || []);
     } catch (err) {
       setError("Failed to scan for clause titles.");
     } finally {
@@ -56,13 +59,42 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (!data.error) {
-        const valid = (data.clauses || []).filter((c) => c.title && c.text);
-        setAllClauses(valid);
+        const incoming = (data.clauses || []).map((c) => ({
+          title: c.title?.trim() || "Untitled",
+          text: c.text || "No content available.",
+          summary: c.summary || "",
+        }));
+
+        setAllClauses((prev) => {
+          const filtered = prev.filter(
+            (c) => !titles.some((t) => normalize(t) === normalize(c.title))
+          );
+          return [...filtered, ...incoming];
+        });
       }
     } catch {
       setError("Failed to fetch clauses.");
     } finally {
       setLoadingClauses(false);
+    }
+  };
+
+  const toggleTitleSelection = async (title) => {
+    const normalizedTitle = title.trim();
+    const isAdding = !selectedTitles.includes(normalizedTitle);
+    const updated = isAdding
+      ? [...selectedTitles, normalizedTitle]
+      : selectedTitles.filter((t) => t !== normalizedTitle);
+
+    setPreviousTitles(selectedTitles);
+    setSelectedTitles(updated);
+
+    if (
+      isAdding &&
+      !allClauses.some((c) => normalize(c.title) === normalize(normalizedTitle))
+    ) {
+      setLoadingClauses(true);
+      await fetchClauses([normalizedTitle]);
     }
   };
 
@@ -74,8 +106,8 @@ export default function HomePage() {
       body: JSON.stringify({
         clause_text: clause?.text || "",
         instructions:
-          "Rewrite this clause to be clearer, more professional, and preserve all meaning. Return one rewritten version."
-      })
+          "Rewrite this clause to be clearer, more professional, and preserve all meaning. Return one rewritten version.",
+      }),
     });
     const data = await res.json();
     const suggestion = data.suggestions?.[0] || "No suggestions available.";
@@ -88,10 +120,27 @@ export default function HomePage() {
     setAllClauses(updated);
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Clause copied to clipboard!");
+  };
+
+  const handleDelete = (index) => {
+    const titleToRemove = allClauses[index]?.title;
+    setSelectedTitles((prev) =>
+      prev.filter((t) => normalize(t) !== normalize(titleToRemove))
+    );
+    setAllClauses((prev) =>
+      prev.filter((c) => normalize(c.title) !== normalize(titleToRemove))
+    );
+  };
+
   const handleSaveChanges = () => alert("Changes saved!");
 
   const handlePreviewUpdatedContract = () => {
-    const selectedClauses = allClauses.filter((c) => selectedTitles.includes(c.title));
+    const selectedClauses = allClauses.filter((c) =>
+      selectedTitles.some((t) => normalize(t) === normalize(c.title))
+    );
     localStorage.setItem("previewClauses", JSON.stringify(selectedClauses));
     navigate("/preview");
   };
@@ -104,40 +153,23 @@ export default function HomePage() {
     }
   };
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    alert("Clause copied to clipboard!");
-  };
-
-  const handleDelete = (index) => {
-    const titleToRemove = allClauses[index]?.title;
-    const updatedTitles = selectedTitles.filter((t) => t !== titleToRemove);
-    setSelectedTitles(updatedTitles);
-    setAllClauses((prev) => prev.filter((c) => c.title !== titleToRemove));
-  };
-
-  const toggleTitleSelection = async (title) => {
-    const isAdding = !selectedTitles.includes(title);
-    const updated = isAdding
-      ? [...selectedTitles, title]
-      : selectedTitles.filter((t) => t !== title);
-    setPreviousTitles(selectedTitles);
-    setSelectedTitles(updated);
-    if (isAdding) {
-      setLoadingClauses(true);
-      await fetchClauses(updated);
-    }
-  };
-
   useEffect(() => {
     if (selectedTitles.length > 0) {
       setTimeout(() => {
         clauseSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 500);
+      }, 300);
     }
   }, [selectedTitles]);
 
-  const displayedClauses = allClauses.filter((c) => selectedTitles.includes(c.title));
+  const displayedClauses = allClauses.filter((c) =>
+    selectedTitles.some((t) => normalize(t) === normalize(c.title))
+  );
+
+  useEffect(() => {
+    console.log("Selected Titles:", selectedTitles);
+    console.log("All Clauses:", allClauses.map((c) => c.title));
+    console.log("Displayed Clauses:", displayedClauses.map((c) => c.title));
+  }, [selectedTitles, allClauses]);
 
   return (
     <>
@@ -191,22 +223,24 @@ export default function HomePage() {
                   <label key={idx}>
                     <input
                       type="checkbox"
-                      checked={selectedTitles.includes(title)}
+                      checked={selectedTitles.includes(title.trim())}
                       onChange={() => toggleTitleSelection(title)}
                     />
                     {title}
                   </label>
                 ))}
-                {loadingClauses && selectedTitles.length > previousTitles.length && (
-                  <p className="loading-text">Loading clause(s)...</p>
-                )}
               </div>
             </aside>
 
             <div className="clause-details">
-              {loadingClauses && selectedTitles.length > previousTitles.length && (
+              {loadingClauses && (
                 <p className="loading-text">Loading selected clauses...</p>
               )}
+
+              {!loadingClauses && displayedClauses.length === 0 && (
+                <p className="loading-text">No clauses loaded yet. Try selecting a title.</p>
+              )}
+
               {displayedClauses.map((clause, index) => (
                 <div className="clause-block" key={index}>
                   <div className="clause-title-static">{clause.title}</div>
@@ -231,7 +265,6 @@ export default function HomePage() {
                   )}
                 </div>
               ))}
-
               {displayedClauses.length > 0 && (
                 <div className="download-btn">
                   <button onClick={handleSaveChanges}>💾 Save Changes</button>
@@ -240,9 +273,9 @@ export default function HomePage() {
               )}
             </div>
           </section>
+          <Footer />
         </div>
       </div>
-      <Footer />
     </>
   );
 }
