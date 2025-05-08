@@ -1,0 +1,260 @@
+/* Updated HomePage.css */
+
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #f8f9fa, #e9ecef);
+  font-family: sans-serif;
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: #1f2937;
+  color: white;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar.expanded {
+  width: 220px;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+  padding: 1rem 0.5rem;
+}
+
+.sidebar .logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+}
+
+.sidebar-toggle.square {
+  background-color: #374151;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  transition: background-color 0.3s;
+}
+
+.sidebar-toggle.square:hover {
+  background-color: #4b5563;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.nav-list li {
+  margin: 0.8rem 0;
+  padding-left: 0.25rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-list li.active {
+  font-weight: bold;
+  color: #93c5fd;
+}
+
+/* Main Panel */
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 2rem;
+}
+
+.main-header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 1rem;
+}
+
+.header-title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.floating-bar {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.loading-banner {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  display: inline-block;
+}
+
+/* Upload Section */
+.upload-section {
+  background-color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.upload-section textarea {
+  width: 100%;
+  margin-top: 0.5rem;
+  height: 100px;
+  border-radius: 6px;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+  resize: none;
+}
+
+.button-row.wide {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.button-row button {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.button-row button:hover {
+  background-color: #2563eb;
+}
+
+/* Clause Section */
+.content-layout {
+  display: flex;
+  gap: 2rem;
+}
+
+.clause-sidebar {
+  flex: 1;
+  max-width: 220px;
+  background-color: #f1f5f9;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.clause-sidebar h4 {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.clause-list label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.clause-details {
+  flex: 3;
+}
+
+.clause-block {
+  background-color: white;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.clause-title-static {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.clause-summary-display {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #374151;
+}
+
+.clause-text {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  resize: vertical;
+  margin-bottom: 0.75rem;
+  font-family: monospace;
+  background-color: #f9fafb;
+}
+
+.clause-actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.clause-actions button {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.clause-actions button:hover {
+  text-decoration: underline;
+}
+
+.ai-suggestions-box {
+  background-color: #fef9c3;
+  border: 1px solid #fde68a;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #92400e;
+}
+
+.download-btn {
+  margin-top: 1rem;
+}
+
+.download-btn button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background-color: #10b981;
+  color: white;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  margin-right: 1rem;
+}
+
+.download-btn button:hover {
+  background-color: #059669;
+}
