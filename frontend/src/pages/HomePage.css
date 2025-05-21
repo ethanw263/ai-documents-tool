@@ -9,22 +9,22 @@
 
 .dashboard-container {
   display: flex;
-  flex: 1;
   background-color: #f7f9fb;
+  transition: all 0.4s ease;
 }
 
 /* Sidebar */
 .sidebar {
+  width: 230px;
   background-color: #1e293b;
   color: white;
-  width: 230px;
   padding: 20px;
-  transition: width 0.3s ease;
-  position: relative;
+  transition: all 0.4s ease;
+  display: block;
 }
 
-.sidebar.collapsed {
-  width: 50px;
+.sidebar.hidden {
+  display: none;
 }
 
 .logo {
@@ -49,33 +49,41 @@
   color: #93c5fd;
 }
 
-/* Sidebar Toggle Button */
-.sidebar-toggle {
-  position: absolute;
-  top: 15px;
-  right: -15px;
-  width: 30px;
-  height: 30px;
-  background-color: #3b82f6;
+/* Hamburger Toggle Button */
+.floating-sidebar-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  background-color: #1f2937;
   color: white;
-  font-size: 16px;
   border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 10;
-  transition: background-color 0.2s ease;
-}
-
-.sidebar-toggle:hover {
-  background-color: #2563eb;
-}
-
-/* Main Content Panel */
-.main-panel {
-  flex: 1;
+  border-radius: 6px;
+  width: 40px;
+  height: 40px;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.floating-sidebar-toggle div {
+  width: 20px;
+  height: 2px;
+  background-color: white;
+  border-radius: 1px;
+}
+
+/* Main Panel */
+.main-panel {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.4s ease;
 }
 
 /* Header */
@@ -107,7 +115,10 @@
 .upload-section {
   background-color: white;
   padding: 20px;
+  height: 100vh;
   border-bottom: 1px solid #e5e7eb;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .upload-section textarea {
@@ -145,12 +156,12 @@
   margin-top: 10px;
 }
 
-/* Clause Viewer */
+/* Clause Layout */
 .content-layout {
   display: flex;
-  flex: 1;
   padding: 20px;
   gap: 20px;
+  box-sizing: border-box;
 }
 
 /* Clause Titles Sidebar */
@@ -159,8 +170,9 @@
   background-color: #f3f4f6;
   padding: 15px;
   border-radius: 8px;
-  max-height: 70vh;
+  max-height: none;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .clause-sidebar h4 {
@@ -176,10 +188,10 @@
   color: #374151;
 }
 
-.loading-text {
-  font-size: 13px;
-  color: #6366f1;
-  margin-top: 8px;
+.spinner {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 /* Clause Details */
@@ -193,6 +205,24 @@
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   margin-bottom: 20px;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: background-color 0.3s ease;
+}
+
+.clause-block.highlight {
+  border-color: #3b82f6;
+  background-color: #e0f2fe;
+  animation: fadeHighlight 2s ease-in-out forwards;
+}
+
+@keyframes fadeHighlight {
+  0% {
+    background-color: #e0f2fe;
+  }
+  100% {
+    background-color: #ffffff;
+  }
 }
 
 .clause-title-static {
@@ -210,6 +240,7 @@
 
 .clause-text {
   width: 100%;
+  box-sizing: border-box;
   min-height: 160px;
   padding: 12px;
   border: 1px solid #d1d5db;
@@ -219,6 +250,7 @@
   font-size: 14px;
   margin-bottom: 10px;
   resize: vertical;
+  overflow: auto;
 }
 
 /* Clause Actions */
@@ -266,4 +298,36 @@ footer.footer {
   color: white;
   text-align: center;
   font-size: 14px;
+}
+
+/* Search Input */
+.search-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  padding: 6px 8px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .content-layout {
+    flex-direction: column;
+  }
+
+  .clause-sidebar {
+    width: 100%;
+    max-height: none;
+  }
+
+  .sidebar {
+    width: 100%;
+    position: relative;
+  }
+
+  .main-panel {
+    height: auto;
+  }
 }
