@@ -22,7 +22,16 @@ export default function HomePage() {
   const clauseSectionRef = useRef(null);
 
   const normalize = (str) =>
-    str?.trim().toLowerCase().replace(/^[\d\.\s-]+/, "").replace(/\.+$/, "");
+    str
+      ?.trim()
+      .toLowerCase()
+      .replace(/^section\s+/i, "")
+      .replace(/^[ivxlcdm]+[\.\)]?\s*/i, "")
+      .replace(/^\(?[a-zA-Z]\)?[\.\)]?\s*/, "")
+      .replace(/^\d+[\.\)]?\s*/, "")
+      .replace(/[^a-z0-9 ]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
   const handleScanForHeadings = async () => {
     setLoading(true);
@@ -51,6 +60,22 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePreviewOriginal = () => {
+    if (file) {
+      const blob = new Blob([file], { type: file.type });
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL, "_blank");
+    }
+  };
+
+  const handlePreviewUpdatedContract = () => {
+    const selectedClauses = allClauses.filter((c) =>
+      selectedTitles.some((t) => normalize(t) === normalize(c.title))
+    );
+    localStorage.setItem("previewClauses", JSON.stringify(selectedClauses));
+    navigate("/preview");
   };
 
   const fetchClauses = async (titles) => {
@@ -110,6 +135,31 @@ export default function HomePage() {
     }
   };
 
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    alert("Clause copied to clipboard!");
+  };
+
+  const handleDelete = (index) => {
+    const titleToRemove = allClauses[index]?.title;
+    setSelectedTitles((prev) => prev.filter((t) => normalize(t) !== normalize(titleToRemove)));
+    setAllClauses((prev) => prev.filter((c) => normalize(c.title) !== normalize(titleToRemove)));
+  };
+
+  const handleAISuggestions = async (index) => {
+    const clause = allClauses[index];
+    const res = await fetch("http://localhost:8000/ai_clause_suggestions/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clause_text: clause?.text || "" }),
+    });
+    const data = await res.json();
+    const suggestion = data.suggestions?.[0] || "No suggestions available.";
+    setAiSuggestions((prev) => ({ ...prev, [index]: suggestion }));
+  };
+
+  const handleSaveChanges = () => alert("Changes saved!");
+
   const displayedClauses = allClauses.filter((c) =>
     selectedTitles.some((t) => normalize(t) === normalize(c.title))
   );
@@ -150,6 +200,8 @@ export default function HomePage() {
               <button onClick={handleScanForHeadings} disabled={loading}>
                 {loading ? "Scanning..." : "Scan Headings"}
               </button>
+              <button onClick={handlePreviewOriginal}>📄 Preview File</button>
+              <button onClick={handlePreviewUpdatedContract}>👀 Preview Updated Contract</button>
             </div>
             {error && <p className="error-msg">{error}</p>}
           </section>
@@ -206,8 +258,25 @@ export default function HomePage() {
                       )
                     }
                   />
+                  <div className="clause-actions">
+                    <button onClick={() => handleCopy(clause.text)}>📋 Copy</button>
+                    <button onClick={() => handleDelete(index)}>❌ Delete</button>
+                    <button onClick={() => handleAISuggestions(index)}>💡 AI Suggestion</button>
+                  </div>
+                  {aiSuggestions[index] && (
+                    <div className="ai-suggestions-box">
+                      <strong>AI Suggestion:</strong>
+                      <div className="suggestion-text">{aiSuggestions[index]}</div>
+                    </div>
+                  )}
                 </div>
               ))}
+              {displayedClauses.length > 0 && (
+                <div className="download-btn">
+                  <button onClick={handleSaveChanges}>💾 Save Changes</button>
+                  <button onClick={handlePreviewUpdatedContract}>👀 Preview Updated Contract</button>
+                </div>
+              )}
             </div>
           </section>
 

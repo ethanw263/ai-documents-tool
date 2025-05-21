@@ -19,22 +19,30 @@ def extract_text_from_pdf(file_path):
 
 def get_clause_titles(contract_text):
     prompt = f"""
-Extract only the exact clause headings from the legal contract text below.
-These are the section headers used in the document — they may be numbered or bulleted, and each represents a distinct clause in the agreement.
+You are a legal contracts analyst. Extract only the actual clause titles from the legal contract text below.
 
-Do not invent or infer clauses. Only return those that actually appear in the document.
+🛑 Do NOT include any extra content, trailing words like "In Process", or body text — only the literal headings as they appear in the document. Some of these appear as a watermark or gray text across the screen so forget those and grab the headings correctly.
 
-Return the list as plain text, one heading per line.
+Each heading should:
+- Appear exactly in the text
+- Be one short line
+- Represent a contract clause
 
-TEXT:
+DO NOT make up or summarize anything.
+Only return clause headings — no bullets, numbers, or formatting.
+
+Return the list as plain text, one title per line.
+
+Contract Text:
 \"\"\"
-{contract_text[:12000]}
+{contract_text[:10000]}
 \"\"\"
 """
-
+    # ^ Value to limit text. Keep low for now to avoid going through tokens
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
+            {"role": "system", "content": "You are a precise legal document parser."},
             {"role": "user", "content": prompt}
         ],
         temperature=0,
@@ -44,27 +52,32 @@ TEXT:
     return [line.strip() for line in lines if line.strip()]
 
 
+
 def get_contract_clauses(contract_text, selected_titles):
     title_list = "\n".join(f"- {title}" for title in selected_titles)
 
     prompt = f"""
-You are a legal assistant. From the contract text below, extract and summarize each of the following clauses if present:
+You are a legal assistant. Extract the full clause text and a short summary for each clause listed below.
 
+🧠 Instructions:
+- Only extract clauses that appear *exactly* as titled.
+- Do NOT guess, infer, or fabricate text.
+- If a title is not found in the contract, skip it.
+
+Each extracted item must include:
+- "title": The exact title matched from the list
+- "summary": A short explanation of the clause (1–2 sentences max)
+- "text": The full clause wording from the contract
+
+Clause Titles:
 {title_list}
 
-For each clause found, return:
-- title
-- summary (brief explanation)
-- text (full clause wording as found)
-
-Skip clauses that clearly do not exist.
-
-Respond in this JSON format:
+Return a JSON array like this:
 [
   {{
-    "title": "Clause Title",
-    "summary": "Short summary...",
-    "text": "Full clause text..."
+    "title": "Compensation and Payment",
+    "summary": "This clause explains how and when the consultant is paid.",
+    "text": "Full clause text here..."
   }},
   ...
 ]
@@ -78,7 +91,7 @@ Contract Text:
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful legal assistant."},
+            {"role": "system", "content": "You are a helpful legal assistant that extracts clauses precisely from text."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
