@@ -183,28 +183,33 @@ export default function HomePage() {
 
         <div className="main-panel">
           <header className="main-header">
-            <div className="header-title">📝 Upload & Analyze Contract</div>
-            <div className="floating-bar">Coming soon: AI Suggestions | Search | Comments</div>
-            {loading && <div className="loading-banner">Scanning for clause titles...</div>}
+            <div className="header-text-only">
+              <div className="header-title">📝 Upload & Analyze Contract</div>
+              <div className="floating-bar">Coming soon: AI Suggestions | Search | Comments</div>
+            </div>
           </header>
 
+
           <section className="upload-section">
-            <h3>Upload Contract</h3>
-            <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-            <textarea
-              placeholder="Or paste contract text here..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-            />
-            <div className="button-row wide">
-              <button onClick={handleScanForHeadings} disabled={loading}>
-                {loading ? "Scanning..." : "Scan Headings"}
-              </button>
-              <button onClick={handlePreviewOriginal}>📄 Preview File</button>
-              <button onClick={handlePreviewUpdatedContract}>👀 Preview Updated Contract</button>
+            <div className={`upload-inner ${sidebarVisible ? "narrow" : "wide"}`}>
+              <h3>Upload Contract</h3>
+              <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+              <textarea
+                placeholder="Or paste contract text here..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+              />
+              <div className="button-row wide">
+                <button onClick={handleScanForHeadings} disabled={loading}>
+                  {loading ? "Scanning..." : "Scan Headings"}
+                </button>
+                <button onClick={handlePreviewOriginal}>📄 Preview File</button>
+                <button onClick={handlePreviewUpdatedContract}>👀 Preview Updated Contract</button>
+              </div>
+              {error && <p className="error-msg">{error}</p>}
             </div>
-            {error && <p className="error-msg">{error}</p>}
           </section>
+
 
           <section className="content-layout" ref={clauseSectionRef}>
             <aside className="clause-sidebar">
