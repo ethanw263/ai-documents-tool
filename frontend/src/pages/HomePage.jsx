@@ -20,6 +20,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const clauseSectionRef = useRef(null);
+  const [expandedSuggestions, setExpandedSuggestions] = useState({});
+
 
   const normalize = (str) =>
     str
@@ -41,10 +43,11 @@ export default function HomePage() {
     if (text) formData.append("raw_text", text);
 
     try {
-      const res = await fetch("http://localhost:8000/extract_clause_titles/", {
+      const res = await fetch("/api/extract_clause_titles/", {
         method: "POST",
-        body: formData,
+        body: formData
       });
+      
       const data = await res.json();
       if (data.error) setError(data.error);
       else {
@@ -91,7 +94,7 @@ export default function HomePage() {
     setLoadingTitleMap(loadingMap);
 
     try {
-      const res = await fetch("http://localhost:8000/extract_selected_clauses/", {
+      const res = await fetch("/api/extract_selected_clauses/", {
         method: "POST",
         body: formData,
       });
@@ -122,6 +125,14 @@ export default function HomePage() {
     }
   };
 
+  const toggleSuggestion = (index) => {
+    setExpandedSuggestions((prev) => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+  
+
   const toggleTitleSelection = async (title) => {
     const normalizedTitle = title.trim();
     const isAdding = !selectedTitles.includes(normalizedTitle);
@@ -148,14 +159,60 @@ export default function HomePage() {
 
   const handleAISuggestions = async (index) => {
     const clause = allClauses[index];
-    const res = await fetch("http://localhost:8000/ai_clause_suggestions/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ clause_text: clause?.text || "" }),
-    });
-    const data = await res.json();
-    const suggestion = data.suggestions?.[0] || "No suggestions available.";
-    setAiSuggestions((prev) => ({ ...prev, [index]: suggestion }));
+    try {
+      const res = await fetch("/api/ai_clause_suggestions/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clause_text: clause?.text || "" }),
+      });
+      const data = await res.json();
+      console.log("🔍 Raw AI suggestion response:", data);
+
+      if (data?.suggestions?.suggestion) {
+        setAiSuggestions((prev) => ({
+          ...prev,
+          [index]: {
+            suggestion: data.suggestions.suggestion,
+            tips: data.suggestions.tips || [],
+          },
+        }));
+      } else if (Array.isArray(data?.suggestions)) {
+        setAiSuggestions((prev) => ({
+          ...prev,
+          [index]: {
+            suggestion: data.suggestions[0] || "No suggestion returned.",
+            tips: [],
+          },
+        }));
+      } else {
+        setAiSuggestions((prev) => ({
+          ...prev,
+          [index]: {
+            suggestion: "No suggestion returned.",
+            tips: [],
+          },
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch AI suggestion:", err);
+      setAiSuggestions((prev) => ({
+        ...prev,
+        [index]: {
+          suggestion: "Error generating suggestion.",
+          tips: [],
+        },
+      }));
+    }
+  };
+
+  const applyAISuggestion = (index) => {
+    const suggestion = aiSuggestions[index]?.suggestion;
+    if (!suggestion) return;
+    setAllClauses((prev) =>
+      prev.map((c, i) =>
+        i === index ? { ...c, text: `${suggestion}`} : c
+      )
+    );
   };
 
   const handleSaveChanges = () => alert("Changes saved!");
@@ -185,7 +242,7 @@ export default function HomePage() {
           <header className="main-header">
             <div className="header-text-only">
               <div className="header-title">📝 Upload & Analyze Contract</div>
-              <div className="floating-bar">Coming soon: AI Suggestions | Search | Comments</div>
+              <div className="floating-bar">Coming soon: Updated AI Suggestions | Create and Save Projects | Return Editable Doc</div>
             </div>
           </header>
 
@@ -254,7 +311,7 @@ export default function HomePage() {
                   </div>
                   <textarea
                     className="clause-text"
-                    value={clause.text}
+                    value={clause.text.replace(/\n{2,}/g, "\n\n").replace(/\n/g, "\n\n")}
                     onChange={(e) =>
                       setAllClauses((prev) =>
                         prev.map((c, i) =>
@@ -267,11 +324,63 @@ export default function HomePage() {
                     <button onClick={() => handleCopy(clause.text)}>📋 Copy</button>
                     <button onClick={() => handleDelete(index)}>❌ Delete</button>
                     <button onClick={() => handleAISuggestions(index)}>💡 AI Suggestion</button>
+                    <button onClick={() => applyAISuggestion(index)}>✅ Apply AI</button>
                   </div>
                   {aiSuggestions[index] && (
-                    <div className="ai-suggestions-box">
+                  <div className="ai-suggestions-box">
                       <strong>AI Suggestion:</strong>
-                      <div className="suggestion-text">{aiSuggestions[index]}</div>
+                      <div className="suggestion-text">
+                        {(() => {
+                          const full = String(aiSuggestions?.[index]?.suggestion || "");
+                          const words = full.trim().split(/\s+/);
+                          const hasMore = words.length > 100;
+                          const shown =
+                            expandedSuggestions[index] || !hasMore
+                              ? full
+                              : words.slice(0, 100).join(" ") + "…";
+
+                          return shown.split("\n").map((line, i2) => (
+                            <p key={`sugg-line-${index}-${i2}`}>{line.trim()}</p>
+                          ));
+                        })()}
+
+                        {(() => {
+                          const full = String(aiSuggestions?.[index]?.suggestion || "");
+                          const hasMore = full.trim().split(/\s+/).length > 100;
+                          if (!hasMore) return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => toggleSuggestion(index)}
+                              style={{
+                                marginTop: "6px",
+                                fontSize: "0.85rem",
+                                background: "none",
+                                border: "none",
+                                color: "#007bff",
+                                cursor: "pointer",
+                                paddingLeft: "0",
+                              }}
+                            >
+                              {expandedSuggestions[index] ? "Show Less ▲" : "Show More ▼"}
+                            </button>
+                          );
+                        })()}
+                      </div>
+
+                      {aiSuggestions[index].tips && (
+                        <div className="suggestion-tips">
+                          <strong>Tips:</strong>
+                          <ul>
+                          {Object.entries(aiSuggestions[index].tips).map(([key, tip], i) => (
+                            <li key={i}>
+                              <strong>{key}:</strong> {tip}
+                            </li>
+                          ))}
+
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

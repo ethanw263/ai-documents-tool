@@ -1,0 +1,6 @@
+fastapi
+pydantic
+uvicorn
+pdfplumber
+python-dotenv
+openai

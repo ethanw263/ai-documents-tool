@@ -303,6 +303,21 @@
   margin-top: 8px;
 }
 
+.suggestion-tips {
+  margin-top: 10px;
+  background-color: #fffbea;
+  border: 1px solid #fcd34d;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.suggestion-tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+
 /* Download Button */
 .download-btn {
   display: flex;
