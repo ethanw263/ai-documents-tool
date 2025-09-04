@@ -1,6 +1,7 @@
 fastapi
-pydantic
 uvicorn
+pydantic
+python-multipart
 pdfplumber
 python-dotenv
 openai
