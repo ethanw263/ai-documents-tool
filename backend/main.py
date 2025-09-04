@@ -5,6 +5,8 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from fastapi import HTTPException
+
 
 from extractor import extract_text_from_pdf, get_clause_titles, get_contract_clauses
 
@@ -20,6 +22,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/debug_key")
+def debug_key():
+    import os
+    key = os.getenv("OPENAI_API_KEY") or ""
+    return {
+        "has_key": bool(key),
+        "len": len(key),
+        "mask": (key[:4] + "..." + key[-4:]) if key else None
+    }
 
 @app.post("/extract_clause_titles/")
 async def extract_clause_titles(file: UploadFile = File(None), raw_text: str = Form(None)):
