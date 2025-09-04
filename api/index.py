@@ -1,37 +1,18 @@
 # api/index.py
-# Robust boot: if importing your FastAPI app fails, expose a debug endpoint.
-import os, sys, traceback
-from starlette.applications import Starlette
-from starlette.responses import PlainTextResponse
+# ASGI wrapper: restores the original path from ?p=... so FastAPI sees /extract_clause_titles/, /ping, etc.
+from urllib.parse import parse_qs
+from backend.main import app as fastapi_app  # your FastAPI app
 
-app = Starlette()
-
-# Ensure project root is importable (…/ai-documents-tool on sys.path)
-ROOT = os.path.dirname(os.path.dirname(__file__))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
-
-_boot_error = None
-try:
-    # Import your FastAPI app
-    from backend.main import app as fastapi_app
-
-    # Mount at both "/" and "/api" so either path works
-    app.mount("/", fastapi_app)
-    app.mount("/api", fastapi_app)
-
-except Exception:
-    _boot_error = traceback.format_exc()
-
-    @app.route("/_boot")
-    async def boot_error(_request):
-        # Shows full Python traceback so we can see the real reason for the crash
-        return PlainTextResponse("BOOT_FAIL\n\n" + _boot_error, status_code=500)
-
-    @app.route("/{path:path}")
-    async def all_paths(_request):
-        # Generic message everywhere else (so we don't spam trace to users)
-        return PlainTextResponse(
-            "Server failed to boot. Visit /_boot for details.",
-            status_code=500
-        )
+async def app(scope, receive, send):
+    # Only adjust HTTP requests
+    if scope.get("type") == "http":
+        # Parse query string like b"p=/extract_clause_titles/"
+        qs = scope.get("query_string", b"").decode("latin-1")
+        p = parse_qs(qs).get("p", [None])[0]
+        if p:
+            new_scope = dict(scope)
+            new_scope["path"] = p
+            new_scope["raw_path"] = p.encode("latin-1")
+            return await fastapi_app(new_scope, receive, send)
+    # Fall back to original scope if no ?p=
+    return await fastapi_app(scope, receive, send)
