@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from fastapi import HTTPException
 
 
-from extractor import extract_text_from_pdf, get_clause_titles, get_contract_clauses
+#from extractor import extract_text_from_pdf, get_clause_titles, get_contract_clauses
 
 load_dotenv()
 
@@ -35,6 +35,7 @@ def debug_key():
 
 @app.post("/extract_clause_titles/")
 async def extract_clause_titles(file: UploadFile = File(None), raw_text: str = Form(None)):
+    from backend.extractor import extract_text_from_pdf, get_clause_titles
     if file:
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(await file.read())
@@ -58,6 +59,7 @@ async def extract_selected_clauses(
     raw_text: str = Form(None),
     selected_titles: str = Form(...)
 ):
+    from backend.extractor import extract_text_from_pdf, get_contract_clauses
     if file:
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp.write(await file.read())

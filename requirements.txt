@@ -3,5 +3,7 @@ uvicorn
 pydantic
 python-multipart
 pdfplumber
+pdfminer.six
+pillow
 python-dotenv
 openai
