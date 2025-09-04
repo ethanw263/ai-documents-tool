@@ -1,5 +1,5 @@
 # api/index.py
-# Wrap your existing FastAPI app so it works at "/" AND at "/api" in Vercel.
+# Respond at "/" and "/api" so Vercel path quirks can't break routes.
 from starlette.applications import Starlette
 from backend.main import app as fastapi_app
 

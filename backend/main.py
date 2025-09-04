@@ -87,7 +87,29 @@ class SuggestionRequest(BaseModel):
 
 @app.post("/ai_clause_suggestions/")
 async def ai_clause_suggestions(req: SuggestionRequest):
-    print("📝 CLAUSE SENT TO AI:", req.clause_text[:1000])
+    import os
+    from openai import OpenAI
+
+    print("📝 CLAUSE SENT TO AI:", (req.clause_text or "")[:1000])
+
+    key = os.getenv("OPENAI_API_KEY")
+    if not key:
+        # Return JSON in the same shape your UI expects (no HTML 500)
+        return {
+            "suggestions": {
+                "suggestion": "Error: OPENAI_API_KEY is missing on the server.",
+                "tips": {
+                    "Clarity": "",
+                    "Structure": "",
+                    "Legal Precision": "",
+                    "Tone & Balance": "",
+                    "Grammar & Language": "",
+                    "Enforceability": ""
+                }
+            }
+        }
+
+    client = OpenAI(api_key=key)
 
     prompt = f"""
 You are a senior legal writing expert. Your task is to rewrite and analyze the following contract clause to improve its clarity, enforceability, structure, and tone.
@@ -130,24 +152,34 @@ Respond only with raw JSON in this exact structure:
     "Enforceability": "[Spot any unenforceable, impractical, or incomplete obligations. Recommend enforceable alternatives using real contract standards or fallback clauses.]"
   }}
 }}
-
-✴️ FORMAT RULES
-- Your entire response must begin with '{{' and end with '}}'.
-- Do NOT include markdown, commentary, or explanations outside the JSON.
-- Each tip must be a dense, multi-sentence paragraph with legal insight — no bullets, no summaries, and no vague advice like “improve clarity” or “rewrite for precision.”
 """
 
-    from openai import OpenAI
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    # === Call OpenAI safely ===
+    try:
+        rsp = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4,
+        )
+        content = (rsp.choices[0].message.content or "").strip()
+    except Exception as e:
+        print("❌ OpenAI call failed:", repr(e))
+        # Return JSON your UI can render (avoid HTML 500s)
+        return {
+            "suggestions": {
+                "suggestion": "Error generating suggestion (OpenAI request failed).",
+                "tips": {
+                    "Clarity": "",
+                    "Structure": "",
+                    "Legal Precision": "",
+                    "Tone & Balance": "",
+                    "Grammar & Language": "",
+                    "Enforceability": ""
+                }
+            }
+        }
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.4,
-    )
-
-    content = response.choices[0].message.content.strip()
-
+    # === Parse JSON safely ===
     if content.startswith("```json"):
         content = content[7:-3].strip()
     elif content.startswith("```"):
@@ -157,7 +189,7 @@ Respond only with raw JSON in this exact structure:
         parsed = json.loads(content)
         return {"suggestions": parsed}
     except Exception:
-        print("❌ Failed to parse suggestions:", content)
+        print("❌ Failed to parse suggestions:", content[:500])
         return {
             "suggestions": {
                 "suggestion": "No suggestion returned.",
@@ -171,6 +203,7 @@ Respond only with raw JSON in this exact structure:
                 }
             }
         }
+    
 
 @app.get("/ping")
 def ping():
